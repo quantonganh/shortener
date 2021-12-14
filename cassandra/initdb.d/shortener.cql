@@ -1,0 +1,2 @@
+CREATE KEYSPACE IF NOT EXISTS shortener WITH replication = {'class':'SimpleStrategy', 'replication_factor' : 1};
+CREATE TABLE IF NOT EXISTS shortener.url (id bigint PRIMARY KEY, short_url text, long_url text);
