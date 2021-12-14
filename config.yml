@@ -1,0 +1,6 @@
+redis:
+  addr: redis:6379
+
+cassandra:
+  hosts:
+    - cassandra
