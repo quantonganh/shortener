@@ -46,45 +46,31 @@ jobs:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Build and push Docker image
+    - name: Build and export to Docker
       if: github.event_name == 'push'
       uses: docker/build-push-action@v2
       with:
         context: .
-        push: true
-        platforms: linux/amd64,linux/arm64,linux/arm/v8
+        load: true
         tags: ${{ github.repository }}:main
 
-  integration-test:
-    if: github.event_name == 'push'
-    needs:
-      - build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+    - name: Run integration test
+      if: github.event_name == 'push'
+      run: |-
+        docker-compose up -d
+        make integration-test
 
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.17
+    - name: Display logs
+      if: github.event_name == 'push' && failure()
+      run: |-
+        docker inspect --format "{{ json .State.Health }}" shortener_cassandra_1 | jq
+        docker-compose logs
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Run integration test
-        run: |-
-          docker-compose up -d
-          make integration-test
-
-      - name: Display logs
-        if: failure()
-        run: |-
-          docker inspect --format "{{ json .State.Health }}" shortener_cassandra_1 | jq
-          docker-compose logs
+    - name: Build and push
+      if: github.event_name == 'push'
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ github.repository }}:main
