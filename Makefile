@@ -1,3 +1,6 @@
+frontend:
+	cd ui && npm install && npm run build
+
 lint:
 	golangci-lint run -v ./...
 

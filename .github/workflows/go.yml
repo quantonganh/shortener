@@ -27,7 +27,9 @@ jobs:
       run: make test
         
     - name: Build
-      run: make build
+      run: |-
+        make frontend
+        make build
 
     - name: Set up QEMU
       if: github.event_name == 'push'
