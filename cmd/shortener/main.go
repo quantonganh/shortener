@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"io/fs"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -10,9 +12,8 @@ import (
 	"github.com/quantonganh/shortener/cassandra"
 	"github.com/quantonganh/shortener/http"
 	"github.com/quantonganh/shortener/redis"
+	"github.com/quantonganh/shortener/ui"
 )
-
-const dirPublic = "public"
 
 func main() {
 	viper.SetConfigName("config")
@@ -46,13 +47,23 @@ func main() {
 	urlService := cassandra.NewURLService(cdb)
 	s := http.NewServer(urlCache, urlService)
 
+	publicFS, err := fs.Sub(ui.Public, "public")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_ = fs.WalkDir(publicFS, ".", func(path string, d fs.DirEntry, err error) error {
+		fmt.Println(path)
+		return nil
+	})
+
 	r := gin.Default()
-	r.GET("/", gin.WrapH(http.UIHandler(dirPublic)))
-	r.GET("/favicon.png", gin.WrapH(http.UIHandler(dirPublic)))
-	r.GET("/global.css", gin.WrapH(http.UIHandler(dirPublic)))
-	r.GET("/build/bundle.css", gin.WrapH(http.UIHandler(dirPublic)))
-	r.GET("/build/bundle.js", gin.WrapH(http.UIHandler(dirPublic)))
-	r.GET("/build/bundle.js.map", gin.WrapH(http.UIHandler(dirPublic)))
+	r.GET("/", gin.WrapH(http.UIHandler(publicFS)))
+	r.GET("/favicon.png", gin.WrapH(http.UIHandler(publicFS)))
+	r.GET("/global.css", gin.WrapH(http.UIHandler(publicFS)))
+	r.GET("/build/bundle.css", gin.WrapH(http.UIHandler(publicFS)))
+	r.GET("/build/bundle.js", gin.WrapH(http.UIHandler(publicFS)))
+	r.GET("/build/bundle.js.map", gin.WrapH(http.UIHandler(publicFS)))
 	r.POST("/create-short-url", s.CreateShortURL)
 	r.GET("/:shortURL", s.RedirectToOriginalURL)
 
